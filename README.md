@@ -88,6 +88,16 @@ If using Gemini, first install the [gcloud CLI](https://cloud.google.com/sdk/doc
 ```
 gcloud auth login
 gcloud config set project <your_project_name>
+
+gcloud auth application-default login
+```
+This will give output like 
+```
+Credentials saved to file: [/home/sankalp/.config/gcloud/application_default_credentials.json]
+
+These credentials will be used by any library that requests Application Default Credentials (ADC).
+
+Quota project "gen-lang-client-0947440188" was added to ADC which can be used by Google client libraries for billing and quota. Note that some services may still bill the project owning the resource.
 ```
 
 6. Launch the evaluation. For example, to reproduce our GPT-3.5 captioning baseline:
