@@ -2,13 +2,14 @@
 
 Modified from https://github.com/web-arena-x/webarena/blob/main/run.py.
 """
+
 import argparse
 import json
 import logging
 import os
 import random
-import time
 import tempfile
+import time
 from pathlib import Path
 
 import openai
@@ -17,10 +18,7 @@ import torch
 from beartype import beartype
 from PIL import Image
 
-from agent import (
-    PromptAgent,
-    construct_agent,
-)
+from agent import PromptAgent, construct_agent
 from agent.prompts import *
 from browser_env import (
     Action,
@@ -31,10 +29,7 @@ from browser_env import (
     create_stop_action,
 )
 from browser_env.actions import is_equivalent
-from browser_env.helper_functions import (
-    RenderHelper,
-    get_action_description,
-)
+from browser_env.helper_functions import RenderHelper, get_action_description
 from evaluation_harness import image_utils
 
 LOG_FOLDER = "log_files"
@@ -62,9 +57,7 @@ def config() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="Run end-to-end evaluation on the benchmark"
     )
-    parser.add_argument(
-        "--render", action="store_true", help="Render the browser"
-    )
+    parser.add_argument("--render", action="store_true", help="Render the browser")
 
     parser.add_argument(
         "--slow_mo",
@@ -72,9 +65,7 @@ def config() -> argparse.Namespace:
         default=0,
         help="Slow down the browser by the specified amount",
     )
-    parser.add_argument(
-        "--action_set_tag", default="som", help="Action type"
-    )
+    parser.add_argument("--action_set_tag", default="som", help="Action type")
     parser.add_argument(
         "--observation_type",
         choices=[
@@ -163,11 +154,12 @@ def config() -> argparse.Namespace:
         default=3840,
     )
 
-
     # example config
     parser.add_argument("--start_url", type=str, default="https://google.com")
     parser.add_argument("--intent", type=str, required=True)
-    parser.add_argument("--image", type=str, default="", help="url of images, seperated by |AND|")
+    parser.add_argument(
+        "--image", type=str, default="", help="url of images, seperated by |AND|"
+    )
 
     # logging related
     parser.add_argument("--result_dir", type=str, default="")
@@ -209,10 +201,7 @@ def early_stop(
     last_k_actions = trajectory[1::2][-k:]  # type: ignore[assignment]
     if len(last_k_actions) >= k:
         if all(
-            [
-                action["action_type"] == ActionTypes.NONE
-                for action in last_k_actions
-            ]
+            [action["action_type"] == ActionTypes.NONE for action in last_k_actions]
         ):
             return True, f"Failed to parse actions for {k} times"
 
@@ -228,30 +217,19 @@ def early_stop(
 
     if last_action["action_type"] != ActionTypes.TYPE:
         if len(last_k_actions) >= k:
-            if all(
-                [
-                    is_equivalent(action, last_action)
-                    for action in last_k_actions
-                ]
-            ):
+            if all([is_equivalent(action, last_action) for action in last_k_actions]):
                 return True, f"Same action for {k} times"
 
     else:
         # check the action sequence
-        if (
-            sum([is_equivalent(action, last_action) for action in action_seq])
-            >= k
-        ):
+        if sum([is_equivalent(action, last_action) for action in action_seq]) >= k:
             return True, f"Same typing action for {k} times"
 
     return False, ""
 
 
 @beartype
-def test(
-    args: argparse.Namespace,
-    config_file: str
-) -> None:
+def test(args: argparse.Namespace, config_file: str) -> None:
     scores = []
     max_steps = args.max_steps
 
@@ -262,12 +240,13 @@ def test(
 
     caption_image_fn = None  # Don't use captioning for the demo, due to extra resources required to run BLIP-2.
 
-
     agent = construct_agent(
         args,
-        captioning_fn=caption_image_fn
-        if args.observation_type == "accessibility_tree_with_captioner"
-        else None,
+        captioning_fn=(
+            caption_image_fn
+            if args.observation_type == "accessibility_tree_with_captioner"
+            else None
+        ),
     )  # NOTE: captioning_fn here is used for captioning input images.
 
     assert args.render, "Rendering is required for end-to-end evaluation"
@@ -289,12 +268,10 @@ def test(
     )
 
     try:
-        render_helper = RenderHelper(
-            config_file, args.result_dir, args.action_set_tag
-        )
+        render_helper = RenderHelper(config_file, args.result_dir, args.action_set_tag)
 
         # Load task.
-        with open(config_file, 'r') as f:
+        with open(config_file, "r") as f:
             _c = json.load(f)
             intent = _c["intent"]
             image_paths = _c.get("image", None)
@@ -307,10 +284,12 @@ def test(
                 for image_path in image_paths:
                     # Load image either from the web or from a local path.
                     if image_path.startswith("http"):
-                        input_image = Image.open(requests.get(image_path, stream=True).raw)
+                        input_image = Image.open(
+                            requests.get(image_path, stream=True).raw
+                        )
                     else:
                         input_image = Image.open(image_path)
-                    
+
                     images.append(input_image)
 
         logger.info(f"[Config file]: {config_file}")
@@ -332,14 +311,14 @@ def test(
                 action = create_stop_action(f"Early stop: {stop_info}")
             else:
                 try:
-                    print('=' * 30)
-                    print('Agent: Thinking...')
+                    print("=" * 30)
+                    print("Agent: Thinking...")
                     action = agent.next_action(
                         trajectory,
                         intent,
                         images=images,
                         meta_data=meta_data,
-                        output_response=True
+                        output_response=True,
                     )
                 except ValueError as e:
                     # get the error message
@@ -351,13 +330,11 @@ def test(
                 action,
                 state_info["info"]["observation_metadata"],
                 action_set_tag=args.action_set_tag,
-                prompt_constructor=agent.prompt_constructor
-                if isinstance(agent, PromptAgent)
-                else None,
+                prompt_constructor=(
+                    agent.prompt_constructor if isinstance(agent, PromptAgent) else None
+                ),
             )
-            render_helper.render(
-                action, state_info, meta_data, args.render_screenshot
-            )
+            render_helper.render(action, state_info, meta_data, args.render_screenshot)
             meta_data["action_history"].append(action_str)
 
             if action["action_type"] == ActionTypes.STOP:
@@ -373,9 +350,7 @@ def test(
                 break
 
         if args.save_trace_enabled:
-            env.save_trace(
-                Path(args.result_dir) / "trace.zip"
-            )
+            env.save_trace(Path(args.result_dir) / "trace.zip")
     except openai.OpenAIError as e:
         logger.info(f"[OpenAI Error] {repr(e)}")
     except Exception as e:
@@ -402,9 +377,7 @@ def prepare(args: argparse.Namespace) -> None:
     # prepare result dir
     result_dir = args.result_dir
     if not result_dir:
-        result_dir = (
-            f"cache/results_{time.strftime('%Y%m%d%H%M%S', time.localtime())}"
-        )
+        result_dir = f"cache/results_{time.strftime('%Y%m%d%H%M%S', time.localtime())}"
     if not Path(result_dir).exists():
         Path(result_dir).mkdir(parents=True, exist_ok=True)
         args.result_dir = result_dir
@@ -436,14 +409,17 @@ if __name__ == "__main__":
     _, tmp_config_file = tempfile.mkstemp(text=True)
     images_url = None
     if args.image:
-        images_url = args.image.split('|AND|')
-    with open(tmp_config_file, 'w') as f:
-        json.dump({
-            "task_id": 0,
-          "start_url": args.start_url,
-          "intent": args.intent,
-          "image": images_url
-        }, f)
+        images_url = args.image.split("|AND|")
+    with open(tmp_config_file, "w") as f:
+        json.dump(
+            {
+                "task_id": 0,
+                "start_url": args.start_url,
+                "intent": args.intent,
+                "image": images_url,
+            },
+            f,
+        )
 
     args.render_screenshot = True
     args.save_trace_enabled = True
