@@ -133,9 +133,7 @@ class TextObervationProcessor(ObservationProcessor):
 
     @beartype
     @staticmethod
-    def partially_in_viewport(
-        bound: list[float], config: BrowserConfig
-    ) -> bool:
+    def partially_in_viewport(bound: list[float], config: BrowserConfig) -> bool:
         [x, y, width, height] = bound
         elem_left_bound = x
         elem_top_bound = y
@@ -192,9 +190,7 @@ class TextObervationProcessor(ObservationProcessor):
                 tree_bounds: list[Any] = [node_bound]
                 for child_idx in graph[idx]:
                     child_bound = add_union_bound(child_idx)
-                    tree_bounds.append(
-                        child_bound.copy() if child_bound else None
-                    )
+                    tree_bounds.append(child_bound.copy() if child_bound else None)
 
                 tree_bounds = [b for b in tree_bounds if valid_bbox(b)]
                 # convert to absolute coordinates
@@ -279,9 +275,7 @@ class TextObervationProcessor(ObservationProcessor):
                 if child_idx in layout_node_cursor:
                     cursor = layout_node_cursor.index(child_idx)
                     union_bound = union_bounds[cursor]
-                    if not self.partially_in_viewport(
-                        union_bound, info["config"]
-                    ):
+                    if not self.partially_in_viewport(union_bound, info["config"]):
                         continue
                     html += dfs(child_idx)
 
@@ -351,12 +345,8 @@ class TextObervationProcessor(ObservationProcessor):
             elif node["backendDOMNodeId"] not in backend_id_to_bound:
                 refine_node_ids.append(node["nodeId"])
             else:
-                node["bound"] = backend_id_to_bound[node["backendDOMNodeId"]][
-                    0
-                ]
-                node["union_bound"] = backend_id_to_bound[
-                    node["backendDOMNodeId"]
-                ][1]
+                node["bound"] = backend_id_to_bound[node["backendDOMNodeId"]][0]
+                node["union_bound"] = backend_id_to_bound[node["backendDOMNodeId"]][1]
                 node["offsetrect_bound"] = backend_id_to_bound[
                     node["backendDOMNodeId"]
                 ][2]
@@ -376,15 +366,15 @@ class TextObervationProcessor(ObservationProcessor):
             refine_node_idx = node_ids.index(refine_node_id)
 
             if parent_idx is not None:
-                accessibility_tree[refine_node_idx][
-                    "bound"
-                ] = accessibility_tree[parent_idx]["bound"]
-                accessibility_tree[refine_node_idx][
-                    "union_bound"
-                ] = accessibility_tree[parent_idx]["union_bound"]
-                accessibility_tree[refine_node_idx][
-                    "offsetrect_bound"
-                ] = accessibility_tree[parent_idx]["offsetrect_bound"]
+                accessibility_tree[refine_node_idx]["bound"] = accessibility_tree[
+                    parent_idx
+                ]["bound"]
+                accessibility_tree[refine_node_idx]["union_bound"] = accessibility_tree[
+                    parent_idx
+                ]["union_bound"]
+                accessibility_tree[refine_node_idx]["offsetrect_bound"] = (
+                    accessibility_tree[parent_idx]["offsetrect_bound"]
+                )
             else:
                 accessibility_tree[refine_node_idx]["bound"] = None
                 accessibility_tree[refine_node_idx]["union_bound"] = None
@@ -525,10 +515,7 @@ class TextObervationProcessor(ObservationProcessor):
                 match = re.search(pattern, line)
                 if match:
                     static_text = match.group(1)
-                    if all(
-                        static_text not in prev_line
-                        for prev_line in prev_lines
-                    ):
+                    if all(static_text not in prev_line for prev_line in prev_lines):
                         clean_lines.append(line)
             else:
                 clean_lines.append(line)
@@ -544,16 +531,12 @@ class TextObervationProcessor(ObservationProcessor):
             current_tab_idx = open_tabs.index(page)
             for idx in range(len(open_tabs)):
                 if idx == current_tab_idx:
-                    tab_titles[
-                        idx
-                    ] = f"Tab {idx} (current): {open_tabs[idx].title()}"
+                    tab_titles[idx] = f"Tab {idx} (current): {open_tabs[idx].title()}"
                 else:
                     tab_titles[idx] = f"Tab {idx}: {open_tabs[idx].title()}"
             tab_title_str = " | ".join(tab_titles)
         except Exception:
-            tab_title_str = " | ".join(
-                ["Tab {idx}" for idx in range(len(open_tabs))]
-            )
+            tab_title_str = " | ".join(["Tab {idx}" for idx in range(len(open_tabs))])
 
         try:
             browser_info = self.fetch_browser_info(page, client)
@@ -580,9 +563,7 @@ class TextObervationProcessor(ObservationProcessor):
                 accessibility_tree = self.current_viewport_accessibility_tree(
                     browser_info, accessibility_tree
                 )
-            content, obs_nodes_info = self.parse_accessibility_tree(
-                accessibility_tree
-            )
+            content, obs_nodes_info = self.parse_accessibility_tree(accessibility_tree)
             content = self.clean_accesibility_tree(content)
             self.obs_nodes_info = obs_nodes_info
             self.meta_data["obs_nodes_info"] = obs_nodes_info
@@ -596,9 +577,7 @@ class TextObervationProcessor(ObservationProcessor):
                 # Load image from current url and run captioning on it.
                 if page.url not in self.url2caption and self.captioning_fn is not None:
                     try:
-                        image = Image.open(
-                            requests.get(page.url, stream=True).raw
-                        )
+                        image = Image.open(requests.get(page.url, stream=True).raw)
                         caption = self.captioning_fn([image])[0].strip()
                         self.url2caption[page.url] = remove_unicode(caption)
                     except Exception as e:
@@ -646,9 +625,7 @@ class TextObervationProcessor(ObservationProcessor):
                             for i in range(0, len(image_pixels), bs):
                                 try:
                                     captions.extend(
-                                        self.captioning_fn(
-                                            image_pixels[i : i + bs]
-                                        )
+                                        self.captioning_fn(image_pixels[i : i + bs])
                                     )
                                 except Exception as e:
                                     print("L628 WARNING: ", e)
@@ -679,32 +656,23 @@ class TextObervationProcessor(ObservationProcessor):
                                 if self.url2caption[image_url] not in updated_alt:
                                     updated_alt = f"{updated_alt}, description: {self.url2caption[image_url]}"
                             elif "data:image/svg" not in image_url:
-                                print(
-                                    f"WARNING: {image_url} not in self.url2caption"
-                                )
+                                print(f"WARNING: {image_url} not in self.url2caption")
 
                             if "url:" not in updated_alt:
                                 updated_alt = f"{updated_alt}, url: {image_url}"
 
                             safe_updated_alt = json.dumps(updated_alt)
-                            image.evaluate(
-                                f"node => node.alt = {safe_updated_alt}"
-                            )
+                            image.evaluate(f"node => node.alt = {safe_updated_alt}")
                         except Exception as e:
                             print("L653 WARNING:", e)
 
-                if (
-                    self.observation_type
-                    == "accessibility_tree_with_captioner"
-                ):
+                if self.observation_type == "accessibility_tree_with_captioner":
                     accessibility_tree = self.fetch_page_accessibility_tree(
                         browser_info, client
                     )
                     if self.current_viewport_only:
-                        accessibility_tree = (
-                            self.current_viewport_accessibility_tree(
-                                browser_info, accessibility_tree
-                            )
+                        accessibility_tree = self.current_viewport_accessibility_tree(
+                            browser_info, accessibility_tree
                         )
                     content, obs_nodes_info = self.parse_accessibility_tree(
                         accessibility_tree
@@ -715,9 +683,7 @@ class TextObervationProcessor(ObservationProcessor):
                 else:
                     content = ""  # Not used for SoM
         else:
-            raise ValueError(
-                f"Invalid observation type: {self.observation_type}"
-            )
+            raise ValueError(f"Invalid observation type: {self.observation_type}")
 
         self.browser_config = browser_info["config"]
         content = f"{tab_title_str}\n\n{content}"
@@ -872,23 +838,16 @@ class ImageObservationProcessor(ObservationProcessor):
                 # Add HTML textContent (if any) to the text representation.
                 if pd.notna(row["TextContent"]):
                     content += (
-                        row["TextContent"]
-                        .strip()
-                        .replace("\n", "")
-                        .replace("\t", "")
+                        row["TextContent"].strip().replace("\n", "").replace("\t", "")
                     )[
                         :200
                     ]  # Limit to 200 characters to avoid having too much text
 
                 # Check if the text is a CSS selector
-                if content and not (
-                    content.startswith(".") and "{" in content
-                ):
+                if content and not (content.startswith(".") and "{" in content):
                     # Add elements which are not interactable as StaticText
                     if content not in text_content_text:
-                        text_content_elements.append(
-                            f"[] [StaticText] [{content}]"
-                        )
+                        text_content_elements.append(f"[] [StaticText] [{content}]")
                         text_content_text.add(content)
                 continue
 
@@ -896,9 +855,9 @@ class ImageObservationProcessor(ObservationProcessor):
                 continue
 
             unique_id = str(index + 1)
-            bbox_id2visid[
-                row["ID"]
-            ] = unique_id  # map the bounding box ID to the unique character ID
+            bbox_id2visid[row["ID"]] = (
+                unique_id  # map the bounding box ID to the unique character ID
+            )
             top, right, bottom, left, width, height = (
                 row["Top"],
                 row["Right"],
@@ -908,7 +867,12 @@ class ImageObservationProcessor(ObservationProcessor):
                 row["Height"],
             )
             left, right, top, bottom = left - b_x, right - b_x, top - b_y, bottom - b_y
-            id2center[unique_id] = ((left + right) / 2, (bottom + top) / 2, width, height)
+            id2center[unique_id] = (
+                (left + right) / 2,
+                (bottom + top) / 2,
+                width,
+                height,
+            )
 
             if width >= min_width and height >= min_height:
                 # Get the next color in the cycle
@@ -973,16 +937,12 @@ class ImageObservationProcessor(ObservationProcessor):
                             if (
                                 new_text_rectangle[0] >= 0
                                 and new_text_rectangle[1] >= 0
-                                and new_text_rectangle[2]
-                                <= viewport_size["width"]
-                                and new_text_rectangle[3]
-                                <= viewport_size["height"]
+                                and new_text_rectangle[2] <= viewport_size["width"]
+                                and new_text_rectangle[3] <= viewport_size["height"]
                             ):
                                 # If the rectangle is within the viewport, check for overlaps
                                 overlaps = False
-                                for (
-                                    existing_rectangle
-                                ) in existing_text_rectangles:
+                                for existing_rectangle in existing_text_rectangles:
                                     if self.rectangles_overlap(
                                         new_text_rectangle,
                                         existing_rectangle,
@@ -1220,9 +1180,7 @@ class ObservationHandler:
         return spaces.Dict({"text": text_space, "image": image_space})
 
     @beartype
-    def get_observation(
-        self, page: Page, client: CDPSession
-    ) -> dict[str, Observation]:
+    def get_observation(self, page: Page, client: CDPSession) -> dict[str, Observation]:
         text_obs = self.text_processor.process(page, client)
         image_obs, content_str = self.image_processor.process(page, client)
         if content_str != "":
