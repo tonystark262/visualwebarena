@@ -2,6 +2,7 @@ import json
 import re
 from pathlib import Path
 from typing import Any, TypedDict
+
 from PIL import Image
 
 from browser_env import Action, ActionParsingError, Trajectory
@@ -39,13 +40,12 @@ class PromptConstructor(object):
     def get_lm_api_input(
         self, intro: str, examples: list[tuple[str, str]], current: str
     ) -> APIInput:
-
         """Return the require format for an API"""
         message: list[dict[str, str]] | str
         if "openai" in self.lm_config.provider:
             if self.lm_config.mode == "chat":
                 message = [{"role": "system", "content": intro}]
-                for (x, y) in examples:
+                for x, y in examples:
                     message.append(
                         {
                             "role": "system",
@@ -199,9 +199,7 @@ class DirectPromptConstructor(PromptConstructor):
         if match:
             return match.group(1).strip()
         else:
-            raise ActionParsingError(
-                f"Cannot parse action from response {response}"
-            )
+            raise ActionParsingError(f"Cannot parse action from response {response}")
 
 
 class CoTPromptConstructor(PromptConstructor):
@@ -280,6 +278,7 @@ class MultimodalCoTPromptConstructor(CoTPromptConstructor):
         page_screenshot_img: Image.Image,
         images: list[Image.Image],
         meta_data: dict[str, Any] = {},
+        hint="",
     ) -> APIInput:
         intro = self.instruction["intro"]
         examples = self.instruction["examples"]
@@ -291,7 +290,9 @@ class MultimodalCoTPromptConstructor(CoTPromptConstructor):
         max_obs_length = self.lm_config.gen_config["max_obs_length"]
         if max_obs_length:
             if self.lm_config.provider == "google":
-                print("NOTE: This is a Gemini model, so we use characters instead of tokens for max_obs_length.")
+                print(
+                    "NOTE: This is a Gemini model, so we use characters instead of tokens for max_obs_length."
+                )
                 obs = obs[:max_obs_length]
             else:
                 obs = self.tokenizer.decode(self.tokenizer.encode(obs)[:max_obs_length])  # type: ignore[arg-type]
@@ -331,7 +332,7 @@ class MultimodalCoTPromptConstructor(CoTPromptConstructor):
                         "content": [{"type": "text", "text": intro}],
                     }
                 ]
-                for (x, y, z) in examples:
+                for x, y, z in examples:
                     example_img = Image.open(z)
                     message.append(
                         {
@@ -345,9 +346,7 @@ class MultimodalCoTPromptConstructor(CoTPromptConstructor):
                                 },
                                 {
                                     "type": "image_url",
-                                    "image_url": {
-                                        "url": pil_to_b64(example_img)
-                                    },
+                                    "image_url": {"url": pil_to_b64(example_img)},
                                 },
                             ],
                         }
@@ -399,7 +398,7 @@ class MultimodalCoTPromptConstructor(CoTPromptConstructor):
                     intro,
                     "Here are a few examples:",
                 ]
-                for (x, y, z) in examples:
+                for x, y, z in examples:
                     example_img = Image.open(z)
                     message.append(f"Observation\n:{x}\n")
                     message.extend(
